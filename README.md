@@ -1,4 +1,4 @@
-# MythicRaces
+# MythicWarriors
 Level up API with new privlages and abilities. 
 
 ## What
@@ -35,4 +35,4 @@ RacePower($race, $power)
 CharecterPower($user, $power)
 
 ## Credits
-By ElemenetalMinecraftGaming / MrDevCat 'Discord'
+By OofDevs
