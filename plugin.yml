@@ -1,9 +1,9 @@
 name: MythicWarriors
-main: ElementalMinecraftGaming\MythicWarriors\Main
+main: OofDevs\MythicWarriors\Main
 version: 1.0.0
 api: [3.7.2]
 load: POSTWORLD
-author: ElementalMinecraftGaming
+author: OofDevs
 description: Fantasy warriors, races and titans!
 
 commands:
