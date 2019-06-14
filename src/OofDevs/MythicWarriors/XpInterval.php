@@ -3,7 +3,7 @@
 namespace OofDevs\MythicWarriors;
 
 use pocketmine\scheduler\Task;
-use ElementalMinecraftGaming\MythicWarriors\Main;
+use OofDevs\MythicWarriors\Main;
 
 class XpInterval extends Task {
     
