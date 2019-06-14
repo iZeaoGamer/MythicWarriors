@@ -1,0 +1,38 @@
+name: MythicWarriors
+main: ElementalMinecraftGaming\MythicWarriors\Main
+version: 1.0.0
+api: [3.7.2]
+load: POSTWORLD
+author: ElementalMinecraftGaming
+description: Fantasy warriors, races and titans!
+
+commands:
+ createcharecter:
+  description: Create your charecter sheet!
+  permission: mythic.createcharecter
+ createrace:
+  description: Create a race!
+  permission: mythic.createrace
+ csheet:
+  description: See your charecter sheet!
+  permission: mythic.profile
+ mythicraces:
+  description: See the races!
+  permission: mythic.races
+ addmlevel:
+  description: Add charecter level!
+  permission: mythic.level
+
+permissions:
+  mythic.createcharecter:
+    default: true
+    description: Let's you make a charecter sheet!
+  mythic.createrace:
+    default: op
+    description: Let's you create a race!
+  mythic.level:
+    default: op
+    description: set mystic level!
+  mythic.profile:
+    default: true
+    description: Let's you see you charecter sheet!
