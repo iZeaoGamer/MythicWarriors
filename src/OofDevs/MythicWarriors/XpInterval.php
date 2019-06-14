@@ -1,6 +1,6 @@
 <?php
 
-namespace ElementalMinecraftGaming\MythicWarriors;
+namespace OofDevs\MythicWarriors;
 
 use pocketmine\scheduler\Task;
 use ElementalMinecraftGaming\MythicWarriors\Main;
