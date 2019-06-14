@@ -7,7 +7,7 @@ use pocketmine\utils\TextFormat;
 use pocketmine\utils\Config;
 use pocketmine\plugin\PluginBase;
 use pocketmine\command\CommandSender;
-use ElementalMinecraftGaming\MythicWarriors\XpInterval;
+use OofDevs\MythicWarriors\XpInterval;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\command\Command;
 use pocketmine\event\Listener;
