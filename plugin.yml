@@ -22,6 +22,9 @@ commands:
  addmlevel:
   description: Add charecter level!
   permission: mythic.level
+ mythictitans:
+  description: Check bosses!
+  permission: mythic.titans
 
 permissions:
   mythic.createcharecter:
@@ -36,3 +39,6 @@ permissions:
   mythic.profile:
     default: true
     description: Let's you see you charecter sheet!
+  mythic.titans:
+    default: true
+    description: Let's you see you check for bosses!
