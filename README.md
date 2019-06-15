@@ -1,8 +1,8 @@
 # MythicWarriors
-Level up API with new privlages and abilities. 
+Level up with new privlages and abilities. 
 
 ## What
-This plugin is a leveling up API that will allow you to gain more privlages and abilities when you reach a certain level.
+This plugin is a leveling up that will allow you to gain more privlages and abilities when you reach a certain level.
 
 Default abilities include Flame Lord (level 30) and Water Bender (level 23).
 
