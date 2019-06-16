@@ -26,12 +26,12 @@ class Main extends PluginBase implements Listener {
         @mkdir($this->getDataFolder());
         $this->db = new \SQLite3($this->getDataFolder() . "MythicWarriors.db");
         $this->db->exec("CREATE TABLE IF NOT EXISTS Charecter(user TEXT PRIMARY KEY, name TEXT, race TEXT, level INT);");
-        $this->db->exec("CREATE TABLE IF NOT EXISTS Titan(name TEXT PRIMARY KEY, race TEXT, size INT, damage INT, health INT, hunger INT, level INT);");
+        $this->db->exec("CREATE TABLE IF NOT EXISTS Titan(name TEXT PRIMARY KEY, race TEXT);");
         $this->db->exec("CREATE TABLE IF NOT EXISTS Race(race TEXT PRIMARY KEY, size INT,  damage INT, health INT, hunger INT, level INT, effect INT, ability TEXT);");
         $this->db->exec("CREATE TABLE IF NOT EXISTS PlayerPower(user TEXT PRIMARY KEY, power INT);");
         $this->db->exec("CREATE TABLE IF NOT EXISTS RacePower(race TEXT PRIMARY KEY, power INT);");
         $this->Interval = new Config($this->getDataFolder() . "Interval.yml", Config::YAML, array("Interval" => 30));
-        $this->getScheduler()->scheduleRepeatingTask(new XpInterval($this), $this->Interval->get("Interval")*20);
+        $this->getScheduler()->scheduleRepeatingTask(new XpInterval($this), $this->Interval->get("Interval") * 20);
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
     }
     
@@ -39,6 +39,15 @@ class Main extends PluginBase implements Listener {
         $username = \SQLite3::escapeString($user);
         $search = $this->db->prepare("SELECT * FROM Charecter WHERE user = :user;");
         $search->bindValue(":user", $username);
+        $start = $search->execute();
+        $delta = $start->fetchArray(SQLITE3_ASSOC);
+        return empty($delta) == false;
+    }
+
+    public function titanRegistered($name) {
+        $username = \SQLite3::escapeString($name);
+        $search = $this->db->prepare("SELECT * FROM Titan WHERE name = :name;");
+        $search->bindValue(":name", $name);
         $start = $search->execute();
         $delta = $start->fetchArray(SQLITE3_ASSOC);
         return empty($delta) == false;
@@ -164,6 +173,13 @@ class Main extends PluginBase implements Listener {
         $start = $dell->execute();
     }
 
+    public function Titan($name, $race) {
+        $del = $this->db->prepare("INSERT OR REPLACE INTO Titan (name, race) VALUES (:name, :race);");
+        $del->bindValue(":name", $name);
+        $del->bindValue(":race", $race);
+        $start = $del->execute();
+    }
+
     public function setRace($user, $race) {
         $del = $this->db->prepare("INSERT OR REPLACE INTO Charecter (user, name, race, level) VALUES (:user, :name, :race, :level);");
         $del->bindValue(":user", $user);
@@ -212,11 +228,13 @@ class Main extends PluginBase implements Listener {
     }
 
     public function OnKill(PlayerDeathEvent $event) {
-        $player = $event->getPlayer();
-        $play = $player->getLastDamageCause();
-        if ($play instanceof EntityDamageByEntityEvent and $play->getDamager() instanceof Player) {
-            $killer = $play->getDamager();
-            $killer->addXp(6.0);
+        $player = $event->getPlayer()->getName();
+        if ($player instanceof Player) {
+            $play = $player->getLastDamageCause();
+            if ($play instanceof EntityDamageByEntityEvent and $play->getDamager() instanceof Player) {
+                $killer = $play->getDamager();
+                $killer->addXp(6.0);
+            }
         }
     }
 
@@ -230,47 +248,57 @@ class Main extends PluginBase implements Listener {
             }
         }
     }
-    
+
     public function checkTitans($player) {
-        $level = $this->getServer()->getPlayer($player)->getLevel()->getFolderName();
-        foreach ($level->getEntities() as $titan) {
+        foreach ($this->getServer()->getPlayer($player)->getLevel()->getEntities() as $titan) {
+            $titan->setNameTagVisible(true);
+            $titan->setNameTagAlwaysVisible(true);
             $tag = $titan->getNameTag();
-            if ($tag == "Elf") {
-                $race = $this->getRace($player);
-                $maxHealth = $this->getRaceHealth($race);
-                $health = $this->getRaceHealth($race);
-                $size = $this->getRaceSize($race);
+            $checkrace = $this->raceMade($tag);
+            if ($checkrace == true) {
+                $maxHealth = $this->getRaceHealth($tag);
+                $health = $this->getRaceHealth($tag);
+                $size = $this->getRaceSize($tag);
+                //$damage = $this->getRaceDamage($tag);
                 $titan->setScale($size);
                 $titan->setMaxHealth($maxHealth);
                 $titan->setHealth($health);
+                //Set Titan Damage next
             }
         }
     }
 
     public function OnDamage(EntityDamageByEntityEvent $event) {
         $player = $event->getEntity();
-        $attacker = $player->getDamager();
-        $race = $this->getRace($attacker);
-        $class = $this->getClass($race);
-        if ($class == "FlameLord") {
-            $player->setOnFire(3);
-            //AddDamageCode here
-        } elseif ($class == "Lifesuck") {
-            $health = $attacker->getHealth();
-            $pdamage = $player->getDamage();
-            $attacker->setHealth($health + $pdamage - 2);
+        if ($player->getName() == "Elf") {
+            $attacker = $player->getDamager();
+            if ($player instanceof Player) {
+                $race = $this->getRace($attacker);
+                $class = $this->getClass($race);
+                if ($class == "FlameLord") {
+                    $player->setOnFire(3);
+                    $damage = $this->getRaceDamage($tag);
+                    $player->setDamage($damage);
+                } elseif ($class == "Lifesuck") {
+                    $health = $attacker->getHealth();
+                    $pdamage = $player->getDamage();
+                    $attacker->setHealth($health + $pdamage);
+                }
+            }
         }
     }
 
     public function join(PlayerJoinEvent $event) {
         $player = $event->getPlayer();
-        if ($this->userRegistered($player) == true) {
-            $prace = $this->getRace($player);
+        $playe = $event->getPlayer()->getName();
+        if ($this->userRegistered($playe) == true) {
+            $prace = $this->getRace($playe);
+            $damage = $this->getRaceDamage($prace);
             $player->setFood($this->getRaceHunger($prace));
             $player->setMaxHealth($this->getRaceHealth($prace));
             $player->setHealth($this->getRaceHealth($prace));
             $player->setScale($this->getRaceSize($prace));
-            //RaceDamageCode Next
+            //Damage code
         }
     }
 
@@ -284,9 +312,8 @@ class Main extends PluginBase implements Listener {
                 if ($sender instanceof Player) {
                     if (isset($args[0])) {
                         if (isset($args[1])) {
-                            $sender->sendMessage($this->Msg("Creating chharecter sheet..."));
-                            $player = $sender->getName();
-                            $user = strtolower($player);
+                            $sender->sendMessage($this->Msg("Creating charecter sheet..."));
+                            $user = $sender->getName();
                             $name = $args[0];
                             $race = $args[1];
                             $checkname = $this->userRegistered($user);
@@ -301,6 +328,7 @@ class Main extends PluginBase implements Listener {
                                         $sender->setFood($this->getRaceHunger($prace));
                                         $sender->setMaxHealth($this->getRaceHealth($prace));
                                         $sender->setHealth($this->getRaceHealth($prace));
+                                        //Damage code
                                         $sender->setScale($this->getRaceSize($prace));
                                         $this->Charecter($user, $name, $race);
                                         $sender->sendMessage($this->Msg("Sheet created!"));
@@ -308,6 +336,42 @@ class Main extends PluginBase implements Listener {
                                     } else {
                                         $sender->sendMessage($this->Msg("Requires level: $RaceLevel!"));
                                     }
+                                } else {
+                                    $sender->sendMessage($this->Msg("No such race!"));
+                                }
+                            } else {
+                                $sender->sendMessage($this->Msg("Sheet already created!"));
+                            }
+                        } else {
+                            $sender->sendMessage($this->Msg("Please set race!"));
+                        }
+                    } else {
+                        $sender->sendMessage($this->Msg("Please set charecter name!"));
+                    }
+                } else {
+                    $sender->sendMessage($this->Msg("In-Game only!"));
+                }
+            } else {
+                $sender->sendMessage($this->Msg("No Permissions!"));
+                return false;
+            }
+        }
+
+        if (strtolower($command->getName()) == "createtitan") {
+            if ($sender->hasPermission("mythic.create")) {
+                if ($sender instanceof Player) {
+                    if (isset($args[0])) {
+                        if (isset($args[1])) {
+                            $sender->sendMessage($this->Msg("Creating titan sheet..."));
+                            $name = $args[0];
+                            $race = $args[1];
+                            $checkname = $this->titanRegistered($name);
+                            if ($checkname == false) {
+                                $checkrace = $this->raceMade($race);
+                                if ($checkrace == true) {
+                                    $this->Titan($name, $race);
+                                    $sender->sendMessage($this->Msg("Titan Sheet created!"));
+                                    return true;
                                 } else {
                                     $sender->sendMessage($this->Msg("No such race!"));
                                 }
@@ -341,8 +405,7 @@ class Main extends PluginBase implements Listener {
                                             if (isset($args[6])) {
                                                 if (isset($args[7])) {
                                                     $sender->sendMessage($this->Msg("Creating race..."));
-                                                    $player = $sender->getName();
-                                                    $user = strtolower($player);
+                                                    $user = $sender->getName();
                                                     $race = $args[0];
                                                     $size = $args[1];
                                                     $damage = $args[2];
@@ -397,8 +460,7 @@ class Main extends PluginBase implements Listener {
                 if ($sender instanceof Player) {
                     if (isset($args[0])) {
                         if (isset($args[1])) {
-                            $player = $args[0];
-                            $user = strtolower($player);
+                            $user = $args[0];
                             $amount = $args[1];
                             $checkname = $this->userRegistered($user);
                             if ($checkname == true) {
@@ -426,11 +488,10 @@ class Main extends PluginBase implements Listener {
         if (strtolower($command->getName()) == "mythicraces") {
             if ($sender->hasPermission("mythic.races")) {
                 if ($sender instanceof Player) {
-                    $use = $sender->getName();
-                    $user = strtolower($use);
+                    $user = $sender->getName();
                     $plevel = $this->getLevel($user);
-                    $sender->sendMessage(TextFormat::BLUE . "==Usable Races==");
-                    $load = $this->db->prepare("SELECT race FROM Race WHERE level<=:level ORDER BY level DESC;");
+                    $sender->sendMessage(TextFormat::BLUE . "==Races==");
+                    $load = $this->db->prepare("SELECT race FROM Race ORDER BY level DESC;");
                     $load->bindValue(":level", $plevel);
                     $start = $load->execute();
                     while ($check = $start->fetchArray(SQLITE3_ASSOC)) {
@@ -447,7 +508,7 @@ class Main extends PluginBase implements Listener {
                 return false;
             }
         }
-        
+
         if (strtolower($command->getName()) == "mythictitans") {
             if ($sender->hasPermission("mythic.titans")) {
                 if ($sender instanceof Player) {
@@ -467,8 +528,7 @@ class Main extends PluginBase implements Listener {
             if ($sender->hasPermission("mythic.profile")) {
                 if ($sender instanceof Player) {
                     $sender->sendMessage($this->Msg("Getting sheet..."));
-                    $player = $sender->getName();
-                    $user = strtolower($player);
+                    $user = $sender->getName();
                     $checkrace = $this->userRegistered($user);
                     if ($checkrace == true) {
                         $name = $this->getCname($user);
@@ -476,7 +536,7 @@ class Main extends PluginBase implements Listener {
                         $size = $this->getRaceSize($race);
                         $level = $this->getLevel($user);
                         $class = $this->getClass($race);
-                        $sender->sendMessage($this->Msg("===Charecter Sheet===\nCharecter: $name\nRace; $race\nAbility: $class\nSize: $size\nLevel: $level"));
+                        $sender->sendMessage($this->Msg("\n===Charecter Sheet===\nCharecter: $name\nRace; $race\nAbility: $class\nSize: $size\nLevel: $level"));
                         return true;
                     } else {
                         $sender->sendMessage($this->Msg("Not charecter sheet found!"));
