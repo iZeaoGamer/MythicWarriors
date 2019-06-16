@@ -9,7 +9,10 @@ description: Fantasy warriors, races and titans!
 commands:
  createcharecter:
   description: Create your charecter sheet!
-  permission: mythic.createcharecter
+  permission: mythic.create
+ createtitan:
+  description: Create a titan sheet!
+  permission: mythic.create
  createrace:
   description: Create a race!
   permission: mythic.createrace
@@ -27,7 +30,7 @@ commands:
   permission: mythic.titans
 
 permissions:
-  mythic.createcharecter:
+  mythic.create:
     default: true
     description: Let's you make a charecter sheet!
   mythic.createrace:
@@ -41,4 +44,4 @@ permissions:
     description: Let's you see you charecter sheet!
   mythic.titans:
     default: true
-    description: Let's you see you check for bosses!
+    description: Let's you check for bosses!
