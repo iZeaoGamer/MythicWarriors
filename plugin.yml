@@ -28,6 +28,9 @@ commands:
  mythictitans:
   description: Check bosses!
   permission: mythic.titans
+ titanegg:
+  description: Get a titan egg!
+  permission: mythic.create
 
 permissions:
   mythic.create:
