@@ -7,6 +7,7 @@ use pocketmine\utils\TextFormat;
 use pocketmine\utils\Config;
 use pocketmine\plugin\PluginBase;
 use pocketmine\command\CommandSender;
+use pocketmine\command\ConsoleCommandSender;
 use OofDevs\MythicWarriors\XpInterval;
 use pocketmine\event\player\PlayerJoinEvent;
 use pocketmine\event\player\PlayerDeathEvent;
@@ -68,6 +69,14 @@ class Main extends PluginBase implements Listener {
         $start = $search->execute();
         $got = $start->fetchArray(SQLITE3_ASSOC);
         return $got["name"];
+    }
+    
+    public function getTitanRace($titan) {
+        $search = $this->db->prepare("SELECT race FROM Titan WHERE name = :name;");
+        $search->bindValue(":name", $titan);
+        $start = $search->execute();
+        $got = $start->fetchArray(SQLITE3_ASSOC);
+        return $got["race"];
     }
 
     public function getLevel($user) {
@@ -254,36 +263,38 @@ class Main extends PluginBase implements Listener {
             $titan->setNameTagVisible(true);
             $titan->setNameTagAlwaysVisible(true);
             $tag = $titan->getNameTag();
-            $checkrace = $this->raceMade($tag);
-            if ($checkrace == true) {
-                $maxHealth = $this->getRaceHealth($tag);
-                $health = $this->getRaceHealth($tag);
-                $size = $this->getRaceSize($tag);
-                //$damage = $this->getRaceDamage($tag);
-                $titan->setScale($size);
-                $titan->setMaxHealth($maxHealth);
-                $titan->setHealth($health);
-                //Set Titan Damage next
+            $titanex = $this->titanRegistered($tag);
+            if ($titanex == true) {
+                $titanRace = $this->getTitanRace($tag);
+                $checkrace = $this->raceMade($titanRace);
+                if ($checkrace == true) {
+                    $maxHealth = $this->getRaceHealth($titanRace);
+                    $health = $this->getRaceHealth($titanRace);
+                    $size = $this->getRaceSize($titanRace);
+                    //$damage = $this->getRaceDamage($tag);
+                    $titan->setScale($size);
+                    $titan->setMaxHealth($maxHealth);
+                    $titan->setHealth($health);
+                    //Set Titan Damage next
+                }
             }
         }
     }
 
     public function OnDamage(EntityDamageByEntityEvent $event) {
         $player = $event->getEntity();
-        if ($player->getName() == "Elf") {
+        if ($player instanceof Player) {
             $attacker = $player->getDamager();
-            if ($player instanceof Player) {
-                $race = $this->getRace($attacker);
-                $class = $this->getClass($race);
-                if ($class == "FlameLord") {
-                    $player->setOnFire(3);
-                    $damage = $this->getRaceDamage($tag);
-                    $player->setDamage($damage);
-                } elseif ($class == "Lifesuck") {
-                    $health = $attacker->getHealth();
-                    $pdamage = $player->getDamage();
-                    $attacker->setHealth($health + $pdamage);
-                }
+            $race = $this->getRace($attacker);
+            $class = $this->getClass($race);
+            if ($class == "FlameLord") {
+                $player->setOnFire(3);
+                $damage = $this->getRaceDamage($race);
+                $player->setDamage($damage);
+            } elseif ($class == "Lifesuck") {
+                $health = $attacker->getHealth();
+                $pdamage = $player->getDamage();
+                $attacker->setHealth($health + $pdamage);
             }
         }
     }
@@ -515,6 +526,41 @@ class Main extends PluginBase implements Listener {
                     $user = $sender->getName();
                     $this->checkTitans($user);
                     return true;
+                } else {
+                    $sender->sendMessage($this->Msg("In-Game only!"));
+                }
+            } else {
+                $sender->sendMessage($this->Msg("No Permissions!"));
+                return false;
+            }
+        }
+        
+        if (strtolower($command->getName()) == "titanegg") {
+            if ($sender->hasPermission("mythic.create")) {
+                if ($sender instanceof Player) {
+                        if (isset($args[0])) {
+                            if (isset($args[1])) {
+                                if (isset($args[2])) {
+                                    $titan = $args[0];
+                                    $checktitan = $this->titanRegistered($titan);
+                                    if ($checktitan == true) {
+                                        $player = $sender->getName();
+                                        $egg = $args[1];
+                                        $amount = $args[2];
+                                        $sender->getServer()->dispatchCommand(new ConsoleCommandSender(), "give $player 383:$egg $amount {display:{Name:$titan}}");
+                                        return true;
+                                    } else {
+                                        $sender->sendMessage($this->Msg("Titan not registered!"));
+                                    }
+                                } else {
+                                    $sender->sendMessage($this->Msg("Set the amount!"));
+                                }
+                            } else {
+                                $sender->sendMessage($this->Msg("Set the mob egg id (32 for Zombie)!"));
+                            }
+                        } else {
+                            $sender->sendMessage($this->Msg("Set the titan name!"));
+                        }
                 } else {
                     $sender->sendMessage($this->Msg("In-Game only!"));
                 }
